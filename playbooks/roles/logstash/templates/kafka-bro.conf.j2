@@ -65,14 +65,30 @@ filter {
           #"[@meta][resp_port]" => "%{id.resp_p}"
         }
       }
-      geoip {
-        source => "id.orig_h"
-        target => "[@meta][geoip_orig]"
-      }
-      geoip {
-        source => "id.resp_h"
-        target => "[@meta][geoip_resp]"
-      }
+      cidr {
+         add_tag => [ "priv_orig" ]
+         # address => [ "%{id.orig_h}" ]
+         network => [ "10.0.0.0/8", "127.0.0.1", "192.168.0.0/16", "172.16.0.0/12" ]
+       }
+       cidr {
+         add_tag => [ "priv_resp" ]
+         # address => [ "%{resp_h}" ]
+         network => [ "10.0.0.0/8", "127.0.0.1", "192.168.0.0/16", "172.16.0.0/12" ]
+       }
+       if "priv_orig" not in [tags] {
+         geoip {
+           source => "id.orig_h"
+           target => "[@meta][geoip_orig]"
+           # tag_on_failure => ["_Orig_Host_GeoIP_failure"]
+         }
+       }
+       if "priv_resp" not in [tags] {
+         geoip {
+           source => "id.resp_h"
+           target => "[@meta][geoip_resp]"
+           tag_on_failure => ["_Resp_Host-GeoIP_failure"]
+         }
+       }
     }
 
     # Tie related records
